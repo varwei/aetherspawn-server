@@ -1,0 +1,42 @@
+name: AetherSpawn Ubuntu
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install speedtest-cli
+        run: sudo apt-get update && sudo apt-get install -y speedtest-cli
+
+      - name: Configure SSH for passwordless authentication
+        run: |
+          sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/#PermitEmptyPasswords no/PermitEmptyPasswords yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/PermitEmptyPasswords no/PermitEmptyPasswords yes/' /etc/ssh/sshd_config
+          echo "SSH configuration updated for passwordless authentication"
+
+      - name: Restart ssh
+        run: sudo service ssh restart
+
+      - name: Set root password
+        run: echo 'root:Aether123!' | sudo chpasswd
+
+      - name: Set runner password
+        run: echo 'runner:Aether123!' | sudo chpasswd
+
+      - name: Download Ngrok
+        run: wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
+
+      - name: Unzip Ngrok
+        run: tar zxvf ngrok-v3-stable-linux-amd64.tgz
+
+      - name: Add Ngrok authtoken
+        run: ./ngrok config add-authtoken ${{ secrets.NGROK_AUTHTOKEN }}
+
+      - name: Expose SSH port
+        run: ./ngrok tcp 22
